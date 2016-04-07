@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = common/avl common/net common/thread common/httpp common/log common/timing
+SUBDIRS = common/avl common/net common/thread common/httpp common/log common/timing hiredis
 
 bin_PROGRAMS = icecast
 
@@ -27,15 +27,14 @@ EXTRA_icecast_SOURCES = yp.c \
 
 icecast_DEPENDENCIES = @ICECAST_OPTIONAL@ common/net/libicenet.la common/thread/libicethread.la \
     common/httpp/libicehttpp.la common/log/libicelog.la common/avl/libiceavl.la common/timing/libicetiming.la
-icecast_LDADD = $(icecast_DEPENDENCIES) @XIPH_LIBS@ @KATE_LIBS@
+icecast_LDADD = $(icecast_DEPENDENCIES) @XIPH_LIBS@ @KATE_LIBS@ hiredis/libhiredis.a
 
 AM_CFLAGS = @XIPH_CFLAGS@
 AM_CPPFLAGS = -I$(srcdir)/common/ @XIPH_CPPFLAGS@
 AM_LDFLAGS = @XIPH_LDFLAGS@ @KATE_LIBS@
 
-
 debug:
-	$(MAKE) all CFLAGS="@DEBUG@"
+	cd hiredis && $(MAKE) && cd .. && $(MAKE) all CFLAGS="@DEBUG@"
 
 profile:
-	$(MAKE) all CFLAGS="@PROFILE@"
+	cd hiredis && $(MAKE) && cd .. && $(MAKE) all CFLAGS="@PROFILE@"

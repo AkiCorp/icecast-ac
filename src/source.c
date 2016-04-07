@@ -58,7 +58,7 @@
 #include "auth.h"
 #include "event.h"
 #include "compat.h"
-
+#include "hiredis/hiredis.h"
 #undef CATMODULE
 #define CATMODULE "source"
 
@@ -701,7 +701,8 @@ void source_main (source_t *source)
     refbuf_t *refbuf;
     client_t *client;
     avl_node *client_node;
-
+    redisReply *reply;
+    redisContext *c;
     source_init (source);
 
     while (global.running == ICECAST_RUNNING && source->running) {
@@ -804,7 +805,6 @@ void source_main (source_t *source)
             source->listeners++;
             ICECAST_LOG_DEBUG("Client added for mountpoint (%s)", source->mount);
             stats_event_inc(source->mount, "connections");
-
             client_node = avl_get_next(client_node);
         }
 
@@ -829,8 +829,29 @@ void source_main (source_t *source)
                 stats_event_args (source->mount, "listener_peak", "%lu", source->peak_listeners);
             }
             stats_event_args (source->mount, "listeners", "%lu", source->listeners);
-            if (source->listeners == 0 && source->on_demand)
+            c = redisConnect("localhost", 6379);
+            if (c->err) {
+                	printf("Error: %s\n", c->errstr);
+          	}  else {
+                  reply = redisCommand(c,"PUBLISH %s listeners%d", "radio", source->listeners);
+                  freeReplyObject(reply);
+                  reply = redisCommand(c,"SET %s %d", "listeners", source->listeners);
+                  freeReplyObject(reply);
+          	}
+            redisFree(c);
+            if (source->listeners == 0 && source->on_demand) {
                 source->running = 0;
+                c = redisConnect("localhost", 6379);
+                if (c->err) {
+                    	printf("Error: %s\n", c->errstr);
+              	}  else {
+                      reply = redisCommand(c,"PUBLISH %s listeners%d", "radio", source->listeners);
+                      freeReplyObject(reply);
+                      reply = redisCommand(c,"SET %s %d", "listeners", source->listeners);
+                      freeReplyObject(reply);
+              	}
+                redisFree(c);
+            }
         }
 
         /* lets reduce the queue, any lagging clients should of been
