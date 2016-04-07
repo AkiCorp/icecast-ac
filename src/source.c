@@ -829,7 +829,7 @@ void source_main (source_t *source)
                 stats_event_args (source->mount, "listener_peak", "%lu", source->peak_listeners);
             }
             stats_event_args (source->mount, "listeners", "%lu", source->listeners);
-            c = redisConnect("localhost", 6379);
+            c = redisConnectUnix((char*)"/tmp/redis.sock");
             if (c->err) {
                 	printf("Error: %s\n", c->errstr);
           	}  else {
@@ -838,20 +838,10 @@ void source_main (source_t *source)
                   reply = redisCommand(c,"SET %s %d", "listeners", source->listeners);
                   freeReplyObject(reply);
           	}
-            redisFree(c);
             if (source->listeners == 0 && source->on_demand) {
                 source->running = 0;
-                c = redisConnect("localhost", 6379);
-                if (c->err) {
-                    	printf("Error: %s\n", c->errstr);
-              	}  else {
-                      reply = redisCommand(c,"PUBLISH %s listeners%d", "radio", source->listeners);
-                      freeReplyObject(reply);
-                      reply = redisCommand(c,"SET %s %d", "listeners", source->listeners);
-                      freeReplyObject(reply);
-              	}
-                redisFree(c);
             }
+            redisFree(c);
         }
 
         /* lets reduce the queue, any lagging clients should of been
