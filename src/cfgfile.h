@@ -189,6 +189,8 @@ typedef struct ice_config_tag {
     int header_timeout;
     int source_timeout;
     int fileserve;
+    char *redis_pass;
+
     int on_demand; /* global setting for all relays */
 
     char *shoutcast_mount;

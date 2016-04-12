@@ -704,6 +704,12 @@ void source_main (source_t *source)
     redisReply *reply;
     redisContext *c;
     source_init (source);
+    ice_config_t *config = config_get_config();
+    char *redis_pass = NULL;
+    if(config->redis_pass != NULL) {
+    	redis_pass = strdup (config->redis_pass);
+    }
+    config_release_config ();    
 
     while (global.running == ICECAST_RUNNING && source->running) {
         int remove_from_q;
@@ -833,6 +839,10 @@ void source_main (source_t *source)
             if (c->err) {
                 	printf("Error: %s\n", c->errstr);
           	}  else {
+		  if(redis_pass != NULL) {
+		     reply = redisCommand(c, "AUTH %s", redis_pass);
+		     freeReplyObject(reply);
+		  }
                   reply = redisCommand(c,"PUBLISH %s listeners%d", "radio", source->listeners);
                   freeReplyObject(reply);
                   reply = redisCommand(c,"SET %s %d", "listeners", source->listeners);
@@ -873,6 +883,7 @@ void source_main (source_t *source)
         /* release write lock on client_tree */
         avl_tree_unlock(source->client_tree);
     }
+    free(redis_pass);
     source_shutdown (source);
 }
 

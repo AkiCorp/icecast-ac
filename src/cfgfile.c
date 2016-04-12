@@ -519,6 +519,7 @@ void config_clear(ice_config_t *c)
     if (c->shoutcast_mount) xmlFree(c->shoutcast_mount);
     if (c->authstack)       auth_stack_release(c->authstack);
     if (c->master_server)   xmlFree(c->master_server);
+    if (c->redis_pass)      xmlFree(c->redis_pass);
     if (c->master_username) xmlFree(c->master_username);
     if (c->master_password) xmlFree(c->master_password);
     if (c->user)            xmlFree(c->user);
@@ -719,6 +720,8 @@ static void _set_defaults(ice_config_t *configuration)
     configuration
         ->fileserve  = CONFIG_DEFAULT_FILESERVE;
     configuration
+        ->redis_pass = NULL;
+    configuration
         ->touch_interval = CONFIG_DEFAULT_TOUCH_FREQ;
     configuration
         ->on_demand = 0;
@@ -872,7 +875,11 @@ static void _parse_root(xmlDocPtr       doc,
             source_password = (char *)xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
         } else if (xmlStrcmp(node->name, XMLSTR("icelogin")) == 0) {
             ICECAST_LOG_ERROR("<icelogin> support has been removed.");
-        } else if (xmlStrcmp(node->name, XMLSTR("fileserve")) == 0) {
+        } else if(xmlStrcmp(node->name, XMLSTR("redis_pass")) == 0) {
+	    if(configuration->redis_pass)
+		xmlFree(configuration->redis_pass);
+	    configuration->redis_pass = (char *)xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+	} else if (xmlStrcmp(node->name, XMLSTR("fileserve")) == 0) {
             tmp = (char *)xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
             configuration->fileserve = util_str_to_bool(tmp);
             if (tmp)
